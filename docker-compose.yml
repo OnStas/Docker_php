@@ -1,11 +1,11 @@
 
-version: '3.0'
+version: '3.3'
 services:
   web:
     build:
       context: ./php
       dockerfile: Dockerfile
-    comtainer_name: php73
+    container_name: php73
     depends_on:
       - db
     volumes: 
@@ -13,7 +13,7 @@ services:
     ports:
       - 8000:80
   db:
-    comtainer_name: mysql
+    container_name: mysql
     image: mysql:8.0
     command: --default-autentification-plugin=mysql_native_password
     restart: always
