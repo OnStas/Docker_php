@@ -1,27 +1,71 @@
-
 version: '3.3'
 services:
   web:
-    build:
-      context: ./php
-      dockerfile: Dockerfile
-    container_name: php73
+    image: php:7.4-apache
+    container_name: php74
     depends_on:
       - db
     volumes: 
       - ./php:/var/www/html/
     ports:
       - 8000:80
+    networks:
+      - app-network     
+ 
   db:
-    container_name: mysql
-    image: mysql:8.0
-    command: --default-autentification-plugin=mysql_native_password
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: test_db
-      MYSQL_USER: devuser
-      MYSQL_PASSWORD: devpass
-    ports: 
-      - 6033:3603
-    
+      MYSQL_ROOT_PASSWORD: example
+    networks:
+      - app-network 
+      
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 5003:8080
+    networks:
+      - app-network
+ 
+  webserver:
+    image: nginx:mainline-alpine
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - "80:8000"
+    volumes:
+      - web-root:/var/www/html
+      - ./nginx-conf:/etc/nginx/conf.d
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+    depends_on:
+      - web
+    networks:
+      - app-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
+    depends_on:
+      - webserver
+    command: certonly --webroot --webroot-path=/var/www/html --email root@boxadi.com --agree-tos --no-eff-email --staging -d boxadi.com  -d www.boxadi.com
+
+volumes:
+  certbot-etc:
+  certbot-var:
+  web-root:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/sammy/node_project/views/
+      o: bind
+
+networks:
+  app-network:
+    driver: bridge
